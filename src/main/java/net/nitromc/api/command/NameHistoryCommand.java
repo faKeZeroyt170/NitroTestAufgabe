@@ -14,7 +14,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 public class NameHistoryCommand implements CommandExecutor {
 
@@ -60,60 +59,58 @@ public class NameHistoryCommand implements CommandExecutor {
                         + "&7..."
         );
 
-        CompletableFuture<PlayerProfile> future =
-                apiService.getPlayerProfile(playerName);
+        apiService.getPlayerProfile(playerName)
+                .thenCompose(profile ->
+                        apiService.getNameHistory(
+                                profile.uuid()
+                        )
+                )
+                .whenComplete((entries, throwable) -> {
 
-        future.whenComplete((profile, throwable) -> {
+                    plugin.getServer()
+                            .getScheduler()
+                            .runTask(
+                                    plugin,
+                                    () -> {
 
-            if (throwable != null) {
+                                        if (throwable != null) {
 
-                Throwable cause = throwable;
+                                            Throwable cause = throwable;
 
-                if (throwable instanceof
-                        java.util.concurrent.CompletionException) {
+                                            if (throwable.getCause() != null) {
+                                                cause = throwable.getCause();
+                                            }
 
-                    cause = throwable.getCause();
-                }
+                                            String message =
+                                                    cause.getMessage() != null
+                                                            ? cause.getMessage()
+                                                            : "Unbekannter API-Fehler.";
 
-                String message =
-                        cause != null
-                                && cause.getMessage() != null
-                                ? cause.getMessage()
-                                : "Unbekannter API-Fehler.";
+                                            MessageUtil.sendError(
+                                                    sender,
+                                                    "Fehler: " + message
+                                            );
 
-                plugin.getServer()
-                        .getScheduler()
-                        .runTask(
-                                plugin,
-                                () -> MessageUtil.sendError(
-                                        sender,
-                                        "Fehler: " + message
-                                )
-                        );
+                                            return;
+                                        }
 
-                return;
-            }
-
-            plugin.getServer()
-                    .getScheduler()
-                    .runTask(
-                            plugin,
-                            () -> sendNameHistory(
-                                    sender,
-                                    profile
-                            )
-                    );
-        });
+                                        sendNameHistory(
+                                                sender,
+                                                entries
+                                        );
+                                    }
+                            );
+                });
 
         return true;
     }
 
     private void sendNameHistory(
             CommandSender sender,
-            PlayerProfile profile
+            List<NameHistoryEntry> entries
     ) {
 
-        if (profile.names().isEmpty()) {
+        if (entries.isEmpty()) {
 
             MessageUtil.send(
                     sender,
@@ -123,54 +120,29 @@ public class NameHistoryCommand implements CommandExecutor {
             return;
         }
 
-        List<NameHistoryEntry> entries =
-                profile.names()
-                        .entrySet()
-                        .stream()
-                        .map(entry ->
-                                new NameHistoryEntry(
-                                        entry.getKey(),
-                                        entry.getValue()
-                                )
-                        )
-                        .sorted(
-                                Comparator.comparingLong(
-                                        NameHistoryEntry::changedAt
-                                ).reversed()
-                        )
-                        .toList();
+        entries = entries.stream()
+                .sorted(
+                        Comparator.comparingLong(
+                                NameHistoryEntry::changedAt
+                        ).reversed()
+                )
+                .toList();
 
         MessageUtil.send(
                 sender,
                 "&5&lNamenshistorie"
         );
 
-        MessageUtil.send(
-                sender,
-                "&7Spieler: &f"
-                        + getValue(profile.name())
-        );
-
-        MessageUtil.send(
-                sender,
-                "&7Einträge: &f"
-                        + entries.size()
-        );
-
-        sender.sendMessage("");
-
         for (NameHistoryEntry entry : entries) {
-
-            String date = formatDate(
-                    entry.changedAt()
-            );
 
             MessageUtil.send(
                     sender,
                     "&7• &f"
                             + entry.name()
                             + " &8- &7"
-                            + date
+                            + formatDate(
+                            entry.changedAt()
+                    )
             );
         }
     }
@@ -182,20 +154,14 @@ public class NameHistoryCommand implements CommandExecutor {
         }
 
         try {
+
             return DATE_FORMAT.format(
                     Instant.ofEpochMilli(timestamp)
             );
+
         } catch (Exception exception) {
+
             return "Unbekannt";
         }
-    }
-
-    private String getValue(String value) {
-
-        if (value == null || value.isBlank()) {
-            return "Nicht verfügbar";
-        }
-
-        return value;
     }
 }
