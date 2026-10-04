@@ -1,6 +1,27 @@
-name: NitroTestAufgabe
-version: '${version}'
+name: NitroApiPlugin
+version: 1.0.0
+main: net.nitromc.api.NitroApiPlugin
+api-version: '1.20'
 
-main: net.nitromc.nitroTestAufgabe.NitroTestAufgabe
-api-version: '26.2'
-load: POSTWORLD
+author: NitroMC
+description: Minecraft API integration plugin
+
+commands:
+  mcinfo:
+    description: Shows information about a Minecraft player
+    usage: /mcinfo <player>
+    permission: nitromc.command.mcinfo
+
+  namehistory:
+    description: Shows the name history of a Minecraft player
+    usage: /namehistory <player>
+    permission: nitromc.command.namehistory
+
+permissions:
+  nitromc.command.mcinfo:
+    description: Allows the use of /mcinfo
+    default: op
+
+  nitromc.command.namehistory:
+    description: Allows the use of /namehistory
+    default: op
