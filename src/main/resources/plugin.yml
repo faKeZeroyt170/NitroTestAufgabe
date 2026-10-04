@@ -1,0 +1,6 @@
+name: NitroTestAufgabe
+version: '${version}'
+
+main: net.nitromc.nitroTestAufgabe.NitroTestAufgabe
+api-version: '26.2'
+load: POSTWORLD
