@@ -2,7 +2,7 @@ package net.nitromc.api.command;
 
 import net.nitromc.api.model.PlayerProfile;
 import net.nitromc.api.service.McApiService;
-import org.bukkit.ChatColor;
+import net.nitromc.api.util.MessageUtil;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -31,14 +31,11 @@ public class McInfoCommand implements CommandExecutor {
             String[] args
     ) {
 
-        /*
-         * Argumente überprüfen.
-         */
         if (args.length != 1) {
 
-            sender.sendMessage(
-                    ChatColor.RED
-                            + "Verwendung: /mcinfo <spielername>"
+            MessageUtil.sendError(
+                    sender,
+                    "Verwendung: /mcinfo <spielername>"
             );
 
             return true;
@@ -46,36 +43,18 @@ public class McInfoCommand implements CommandExecutor {
 
         String playerName = args[0];
 
-        /*
-         * Lade-Nachricht.
-         */
-        sender.sendMessage(
-                ChatColor.GRAY
-                        + "Lade Informationen für "
-                        + ChatColor.WHITE
+        MessageUtil.send(
+                sender,
+                "&7Lade Informationen für &f"
                         + playerName
-                        + ChatColor.GRAY
-                        + "..."
+                        + "&7..."
         );
 
-        /*
-         * API-Anfrage starten.
-         *
-         * Wichtig:
-         * Hier wird NICHT .join() oder .get()
-         * verwendet.
-         */
         CompletableFuture<PlayerProfile> future =
                 apiService.getPlayerProfile(playerName);
 
-        /*
-         * Auf das Ergebnis reagieren.
-         */
         future.whenComplete((profile, throwable) -> {
 
-            /*
-             * Fehler behandeln.
-             */
             if (throwable != null) {
 
                 Throwable cause = throwable;
@@ -93,27 +72,22 @@ public class McInfoCommand implements CommandExecutor {
                                 : "Unbekannter API-Fehler.";
 
                 /*
-                 * Bukkit/Paper-Ausgabe zurück
-                 * auf den Server-Thread bringen.
+                 * Bukkit-Nachrichten müssen auf dem
+                 * Main-Thread ausgeführt werden.
                  */
                 plugin.getServer()
                         .getScheduler()
                         .runTask(
                                 plugin,
-                                () -> sender.sendMessage(
-                                        ChatColor.RED
-                                                + "Fehler: "
-                                                + ChatColor.GRAY
-                                                + message
+                                () -> MessageUtil.sendError(
+                                        sender,
+                                        "Fehler: " + message
                                 )
                         );
 
                 return;
             }
 
-            /*
-             * Erfolgreiche Antwort.
-             */
             plugin.getServer()
                     .getScheduler()
                     .runTask(
@@ -133,41 +107,34 @@ public class McInfoCommand implements CommandExecutor {
             PlayerProfile profile
     ) {
 
-        sender.sendMessage("");
-        sender.sendMessage(
-                ChatColor.DARK_PURPLE
-                        + "§lSpielerinformationen"
+        MessageUtil.send(
+                sender,
+                "&5&lSpielerinformationen"
         );
 
-        sender.sendMessage(
-                ChatColor.GRAY
-                        + "Name: "
-                        + ChatColor.WHITE
+        MessageUtil.send(
+                sender,
+                "&7Name: &f"
                         + getValue(profile.name())
         );
 
-        sender.sendMessage(
-                ChatColor.GRAY
-                        + "UUID: "
-                        + ChatColor.WHITE
+        MessageUtil.send(
+                sender,
+                "&7UUID: &f"
                         + getValue(profile.uuid())
         );
 
-        sender.sendMessage(
-                ChatColor.GRAY
-                        + "Skin: "
-                        + ChatColor.WHITE
+        MessageUtil.send(
+                sender,
+                "&7Skin: &f"
                         + getValue(profile.skinUrl())
         );
 
-        sender.sendMessage(
-                ChatColor.GRAY
-                        + "NameMC: "
-                        + ChatColor.WHITE
+        MessageUtil.send(
+                sender,
+                "&7NameMC: &f"
                         + profile.getProfileUrl()
         );
-
-        sender.sendMessage("");
     }
 
     private String getValue(String value) {

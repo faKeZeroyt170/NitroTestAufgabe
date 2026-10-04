@@ -1,6 +1,7 @@
 package net.nitromc.api;
 
 import net.nitromc.api.command.McInfoCommand;
+import net.nitromc.api.command.NameHistoryCommand;
 import net.nitromc.api.service.McApiService;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,16 +12,17 @@ public final class NitroApiPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
 
-        /*
-         * API-Service erstellen.
-         */
         apiService = new McApiService();
 
-        /*
-         * /mcinfo registrieren.
-         */
         getCommand("mcinfo").setExecutor(
                 new McInfoCommand(
+                        apiService,
+                        this
+                )
+        );
+
+        getCommand("namehistory").setExecutor(
+                new NameHistoryCommand(
                         apiService,
                         this
                 )
